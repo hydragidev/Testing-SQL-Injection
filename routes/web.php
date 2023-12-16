@@ -20,5 +20,6 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [Dashboard::class, 'dashboard'])->name('dashboard.index');
 Route::get('/dashboard/add', [Dashboard::class, 'add_project'])->name('dashboard.add_project');
-Route::post('/dashboard/add', [Dashboard::class, 'process_import_project'])->name('dashboard.process_import_project');
+Route::post('/dashboard/add', [Dashboard::class, 'process_add_project'])->name('dashboard.process_add_project');
+Route::get('/dashboard/delete/{id}', [Dashboard::class, 'delete_project'])->name('dashboard.delete_project');
 Route::get('/dashboard/reset_project', [Dashboard::class, 'reset_project'])->name('dashboard.reset_project');
