@@ -18,6 +18,20 @@ class Dashboard extends Controller
         return view('dashboard.add_project');   
     }
 
+    // feature add name project
+    public function add_name_project(Request $request)
+    {
+        $request->validate([
+            'name_project' => 'required'
+        ]);
+
+        $name_project = session()->get('name_project');
+
+        session()->put('name_project', $request->name_project);
+
+        return redirect()->back();
+    }
+
     // feature process import & input url
     public function process_add_project(Request $request) 
     {
@@ -39,7 +53,6 @@ class Dashboard extends Controller
 
             // Mendekode file JSON Postman menjadi array
             $postmanArray = json_decode($postmanJson, true);
-
             // Mendapatkan data dari sesi info_url
             $endpoint = session()->get('info_url', []);
 
@@ -49,12 +62,24 @@ class Dashboard extends Controller
 
                 // Iterasi melalui setiap item dalam file Postman
                 foreach ($postmanArray["item"] as $item) {
+                    $headers = '';
+
+                    // Iterasi melalui setiap header dalam item
+                    foreach ($item['request']['header'] as $header) {
+                        $headers .= "{$header['key']}:{$header['value']}\n";
+                    }
+
+                    $filterPostdata = str_replace("\n", "", $item["request"]["body"]["raw"] ?? "");
+                    $filterPostdata = str_replace("    ", "", $filterPostdata ?? '');
+                    $filterPostdata = str_replace(" ", "", $filterPostdata ?? '');
+
                     $endpoint[$id] = [
                         "id" => $id,
                         "name_url" => $item["name"],
                         "method" => $item["request"]["method"],
                         "url" => $item["request"]["url"]["raw"],
-                        "post_data" => $item["request"]["body"]["raw"] ?? ""
+                        "post_data" => $filterPostdata ?? "",
+                        "headers" => $headers
                     ];
                     $id++;
                 }
@@ -71,10 +96,13 @@ class Dashboard extends Controller
         } else {
             // Validasi input untuk operasi "add"
             $request->validate([
+                'name_url' => 'required',
                 'url' => 'required',
                 'method' => 'required' 
             ]);
 
+            $headers = str_replace("\r", "", $request->header);
+            
             // Mendapatkan data dari sesi info_url
             $endpoint = session()->get('info_url', []);
 
@@ -88,7 +116,8 @@ class Dashboard extends Controller
                     "name_url" => $request->name_url ?? "-",
                     "method" => $request->method,
                     "url" => $request->url,
-                    "post_data" => $request->post_data ?? ""
+                    "post_data" => $request->post_data ?? "",
+                    "headers" => $headers ?? ""
                 ];
 
                 // Menyimpan kembali array ke dalam sesi info_url
@@ -106,7 +135,8 @@ class Dashboard extends Controller
                     "name_url" => $request->name_url,
                     "method" => $request->method,
                     "url" => $request->url,
-                    "post_data" => $request->post_data ?? ""
+                    "post_data" => $request->post_data ?? "",
+                    "headers" => $headers ?? ""
                 ];
 
                 // Menyimpan kembali array ke dalam sesi info_url
@@ -135,11 +165,34 @@ class Dashboard extends Controller
     // feature reset list url
     public function reset_project()
     {
-        // Menghapus sesi 'info_endpoint'
-        session()->forget('info_endpoint');
+        // Menghapus sesi
+        session()->forget('name_project');
         session()->forget('info_url');
 
         // Redirect kembali ke route dengan nama 'dashboard.add_project' dengan pesan berhasil
         return redirect()->route('dashboard.add_project')->with('success', 'Sesi berhasil dihapus');
+    }
+
+    // feature project detail
+    public function project_detail()
+    {
+        $infoUrl = session()->get('info_url');
+        $infoNameProject = session()->get('name_project');
+
+        if($infoUrl == null && $infoNameProject == null) {
+            return redirect()->back()->with('failed', "Name Project / Endpoint URL empty!");
+        }
+
+        // dd($infoUrl, $infoNameProject);
+
+        return view('dashboard.project_detail', compact('infoUrl', 'infoNameProject'));
+
+    }
+
+    // feature project launch scan
+    public function project_launch()
+    {
+
+        return view('dashboard.project_launch');
     }
 }

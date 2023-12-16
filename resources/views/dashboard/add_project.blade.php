@@ -7,10 +7,24 @@
 
     <h1>Add Project</h1>
     <hr>
-    <div class="mb-3">
-        <label for="exampleFormControlInput1" class="form-label">Name Project</label>
-        <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Name Project" style="width: 50%" name="name_project">
-    </div>
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @elseif(session('failed'))
+        <div class="alert alert-danger text-white" style="background-color: rgb(253, 105, 105);">
+            {{ session('failed') }}
+        </div>
+    @endif
+    <form action="{{ route('dashboard.add_name_project')}}" method="POST">
+        @csrf
+        <div class="mb-3">
+            <div class="input-group mb-3" style="width: 50%">
+                <input type="text" class="form-control" placeholder="Name Project" aria-label="Name Project" aria-describedby="button-addon2" name="name_project" value="{{ session('name_project') ?? ''}}">
+                <button class="btn btn-outline-secondary" {{ session('name_project') ? 'disabled' : ''}} type="submit">Save</button>
+            </div>
+        </div>
+    </form>
     <nav>
         <div class="nav nav-tabs" id="nav-tab" role="tablist">
           <button class="nav-link active" id="nav-home-tab" data-bs-toggle="tab" data-bs-target="#nav-home" type="button" role="tab" aria-controls="nav-home" aria-selected="true">Input Manual</button>
@@ -23,7 +37,7 @@
                 @csrf
                 <div class="mb-3 mt-3">
                     <label for="exampleFormControlInput1" class="form-label">Name Endpoint/URL</label>
-                    <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="Name Endpoint/URL" style="width: 50%" name="name_url">
+                    <input type="text" required class="form-control" id="exampleFormControlInput1" placeholder="Name Endpoint/URL" style="width: 50%" name="name_url">
                 </div>
                 <div class="mb-3">
                     <label for="exampleFormControlInput1" class="form-label">Endpoint/URL</label>
@@ -40,13 +54,15 @@
                             <label for="" class="mt-3">Post Data</label>
                             <input type="text" class="form-control" id="post_data" placeholder="search=test&id=1" name="post_data" disabled>
                         </div>
-                        <div class="col-3">
-                            <button class="btn btn-secondary" type="submit" id="inputGroupFileAddon04">
-                                Add URL
-                            </button>
-                        </div>
                     </div>
                 </div>
+                <div class="mb-3 mt-3">
+                    <label for="exampleFormControlInput1" class="form-label">Headers</label>
+                    <textarea name="header" style="width: 50%;" id="" cols="30" rows="5" class="form-control"></textarea>
+                </div>
+                <button class="btn btn-secondary" type="submit" id="inputGroupFileAddon04">
+                    Add URL
+                </button>
             </form>
         </div>
         <div class="tab-pane fade" id="nav-profile" role="tabpanel" aria-labelledby="nav-profile-tab">
@@ -64,21 +80,12 @@
             </form>
         </div>
     </div>
-    @if(session('success'))
-        <div class="alert alert-success">
-            {{ session('success') }}
-        </div>
-    @elseif(session('failed'))
-        <div class="alert alert-danger">
-            {{ session('failed') }}
-        </div>
-    @endif
     @if(session('info_url'))
     <hr>    
-        {{-- {{ json_encode(session('info_endpoint'))}} --}}
+        {{-- {{ json_encode(session('info_url'))}} --}}
         <div class="card w-100">
             <div class="card-body p-4">
-                <a href="{{ route('dashboard.reset_project') }}" class="btn btn-info float-end mb-3"><i class="ti ti-refresh"></i>&nbsp;Reset</a>
+                <a href="{{ route('dashboard.reset_project') }}" class="btn btn-outline-info float-end mb-3"><i class="ti ti-refresh"></i>&nbsp;Reset</a>
                 <h5 class="card-title fw-semibold mb-4">Endpoint URL</h5>
               <div class="table-responsive">
                 <table class="table text-nowrap mb-0 align-middle">
@@ -138,6 +145,10 @@
                             </td>
                             <td class="border-bottom-0">
                                 <h6 class="fw-semibold mb-1">{{ $item['url']}}</h6>
+                                @if($item['headers'])
+                                    <p class="mt-2">HEADER :</p>
+                                    <pre>{{ $item['headers'] }}</pre>
+                                @endif
                                 @if($item['method'] == "POST")
                                     <p class="mt-2">POST DATA :</p>
                                     <code style="background-color: rgb(211, 211, 211); padding: 2px 4px; border-radius: 3px; color: black; padding: 10px;">
@@ -153,10 +164,12 @@
                         </tr>   
                     @endforeach               
                 </tbody>
-                
                 </table>
               </div>
             </div>
+        </div>
+        <div class="float-end">
+            <a href="{{ route('dashboard.project_detail') }}" class="btn btn-primary">Continue <i class="ti ti-caret-right"></i></a>
         </div>
     @endif
 @endsection
