@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Dashboard;
 
 /*
 |--------------------------------------------------------------------------
@@ -16,3 +17,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('welcome');
 });
+
+Route::get('/dashboard', [Dashboard::class, 'dashboard'])->name('dashboard.index');
+Route::get('/dashboard/add', [Dashboard::class, 'add_project'])->name('dashboard.add_project');
+Route::post('/dashboard/add', [Dashboard::class, 'process_import_project'])->name('dashboard.process_import_project');
+Route::get('/dashboard/reset_project', [Dashboard::class, 'reset_project'])->name('dashboard.reset_project');
