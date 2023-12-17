@@ -43,14 +43,14 @@
                     <label for="exampleFormControlInput1" class="form-label">Endpoint/URL</label>
                     <div class="row">
                         <div class="col-2">
-                            <select class="form-select" aria-label="Default select example" name="method" id="methodSelect">
+                            <select class="form-select"  required aria-label="Default select example" name="method" id="methodSelect">
                                 <option selected>Method</option>
                                 <option value="GET">GET</option>
                                 <option value="POST">POST</option>
                             </select>
                         </div>
                         <div class="col-4">
-                            <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="http://tester.com/index.php?=1" name="url">
+                            <input type="text" class="form-control" id="exampleFormControlInput1" placeholder="http://tester.com/index.php?=1" name="url" required>
                             <label for="" class="mt-3">Post Data</label>
                             <input type="text" class="form-control" id="post_data" placeholder="search=test&id=1" name="post_data" disabled>
                         </div>

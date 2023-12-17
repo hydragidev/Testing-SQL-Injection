@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use App\Models\ProjectEndpointModel;
+use App\Models\ProjectModel;
+
 
 class Dashboard extends Controller
 {
@@ -44,7 +48,6 @@ class Dashboard extends Controller
             $request->validate([
                 'file_postman' => 'required|mimes:json|max:2048', // Sesuaikan dengan kebutuhan Anda
             ]);
-
             // Mendapatkan file Postman yang diunggah
             $file = $request->file('file_postman');
 
@@ -179,11 +182,10 @@ class Dashboard extends Controller
         $infoUrl = session()->get('info_url');
         $infoNameProject = session()->get('name_project');
 
-        if($infoUrl == null && $infoNameProject == null) {
+        if($infoUrl === null && $infoNameProject === null) {
             return redirect()->back()->with('failed', "Name Project / Endpoint URL empty!");
         }
 
-        // dd($infoUrl, $infoNameProject);
 
         return view('dashboard.project_detail', compact('infoUrl', 'infoNameProject'));
 
@@ -192,7 +194,143 @@ class Dashboard extends Controller
     // feature project launch scan
     public function project_launch()
     {
+        $infoUrl = session()->get('info_url');
+        $infoNameProject = session()->get('name_project');
 
-        return view('dashboard.project_launch');
+        if($infoUrl == null && $infoNameProject == null) {
+            return redirect()->route('dashboard.add_project')->with('failed', 'Name Project / Endpoint URL empty!');
+        }
+
+        // Simpan data ke dalam model ProjectModel dan dapatkan ID
+        $project = ProjectModel::create([
+            'name_project' => $infoNameProject,
+            'is_active' => true,
+        ]);
+
+        $projectId = $project->id;
+
+        // Simpan data ke dalam model ProjectEndpointModel
+        foreach ($infoUrl as $urlData) {
+
+            $apiEndpoint = env('API_ENDPOINT', 'http://127.0.0.1:8775');
+
+            $response = Http::get($apiEndpoint . '/task/new');
+
+            $responseData = $response->json();
+
+            if(!$responseData['success']) {
+                return redirect()->route('dashboard.add_project')->with('failed', 'API Endpoint is inactive');
+            }
+
+            ProjectEndpointModel::create([
+                'project_id' => $projectId,
+                'name_url' => $urlData['name_url'], // Sesuaikan dengan struktur array Anda
+                'method' => $urlData['method'], // Sesuaikan dengan struktur array Anda
+                'url' => $urlData['url'], // Sesuaikan dengan struktur array Anda
+                'post_data' => $urlData['post_data'] ?? "", // Sesuaikan dengan struktur array Anda
+                'headers' => $urlData['headers'] ?? "", // Sesuaikan dengan struktur array Anda
+                'taskID' => $responseData['taskid'], // Sesuaikan dengan struktur array Anda
+                'is_active' => true, // Sesuaikan dengan nilai yang sesuai
+            ]);
+
+            // Eksekusi perintah cURL untuk memulai pemindaian
+            $scanResponse = Http::post("{$apiEndpoint}/scan/{$responseData['taskid']}/start", [
+                'url' => $urlData['url'],
+            ], [
+                'headers' => [
+                    'Content-Type' => 'application/json',
+                ],
+            ]);
+        }
+
+        session()->forget('name_project');
+        session()->forget('info_url');
+
+        // Redirect ke rute 'dashboard.project_launch_detail' dengan parameter 'id'
+        return redirect()->route('dashboard.project_launch_detail', ['id' => $projectId]);
+    }
+
+
+    // feature detail project launch
+    public function project_launch_detail($id)
+    {
+
+        // Mendapatkan data dari ProjectModel berdasarkan ID
+        $project = ProjectModel::find($id);
+
+        if (!$project) {
+            return abort(404); // Atau tindakan yang sesuai jika proyek tidak ditemukan
+        }
+
+        // Mendapatkan data dari ProjectEndpointModel berdasarkan project_id
+        $endpoints = ProjectEndpointModel::where('project_id', $id)->get();
+
+        $arrayItem = [];
+
+        foreach($endpoints as $item) {
+
+            $apiEndpoint = env('API_ENDPOINT', 'http://127.0.0.1:8775');
+
+            $getStatus = Http::get($apiEndpoint . "/scan/{$item->taskID}/status");
+
+            $getLog = Http::get($apiEndpoint . "/scan/{$item->taskID}/log");
+
+            $arrayItem[] = [
+                "items" => [
+                    "id" => $item->id,
+                    "project_id" => $item->project_id,
+                    "name_url" => $item->name_url,
+                    "method" => $item->method,
+                    "url" => $item->url,
+                    "post_data" => $item->post_data ?? "",
+                    "headers" => $item->headers,
+                    "taskID" => $item->taskID,
+                    "is_active" => $item->is_active,
+                    "created_at" => $item->created_at,
+                    "updated_at" => $item->updated_at
+                ],
+                "status" => $getStatus->json()["status"],
+                "log" => $getLog->json()["log"]
+            ];
+
+        }
+
+        // dd($arrayItem);
+
+        return view('dashboard.project_launch', compact('project', 'endpoints', 'arrayItem'));
+
+    }
+
+    // feature delete project launch
+    public function project_launch_delete($id)
+    {
+        // Mendapatkan data dari ProjectModel berdasarkan ID
+        $project = ProjectModel::find($id);
+
+        if (!$project) {
+            return abort(404); // Atau tindakan yang sesuai jika proyek tidak ditemukan
+        }
+
+        // Mendapatkan data dari ProjectEndpointModel berdasarkan project_id
+        $endpoints = ProjectEndpointModel::where('project_id', $id)->get();
+
+        // Update is_active menjadi false di ProjectModel
+        $project->update(['is_active' => false]);
+
+        // Update is_active menjadi false di ProjectEndpointModel
+        ProjectEndpointModel::where('project_id', $id)->update(['is_active' => false]);
+
+        $endpoints = ProjectEndpointModel::where('project_id', $id)->get();
+
+        foreach ($endpoints as $item) {
+            $apiEndpoint = env('API_ENDPOINT', 'http://127.0.0.1:8775');
+
+            Http::get($apiEndpoint . "/scan/{$item->taskID}/stop");
+            Http::get($apiEndpoint . "/scan/{$item->taskID}/kill");
+            Http::get($apiEndpoint . "/scan/{$item->taskID}/delete");
+
+        }
+
+        return redirect()->back()->with('success', 'Scanning Stop!');
     }
 }

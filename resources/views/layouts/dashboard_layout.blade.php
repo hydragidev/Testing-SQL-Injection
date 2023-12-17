@@ -56,6 +56,28 @@
                     </div>
                 </div>
             </li>
+            @php
+                 use App\Models\ProjectModel;
+                 $projects = ProjectModel::where('is_active', true)->get();
+
+            @endphp
+            @foreach ($projects as $item)
+            <li class="sidebar-item">
+              <a class="sidebar-link" href="{{ route('dashboard.project_launch_detail',  $item->id )}}" aria-expanded="false" >
+                @if($item->is_active)
+                <span>
+                  <i class="ti ti-list-details"></i>
+                </span>
+                <span class="hide-menu">{{ $item->name_project }}</span>
+                @else
+                <span>
+                  <i class="ti ti-list-details" style="color: grey"></i>
+                </span>
+                <span class="hide-menu" style="color: grey"><del>{{ $item->name_project }}</del></span>
+                @endif
+              </a>
+            </li>
+            @endforeach
         </nav>
         <!-- End Sidebar navigation -->
       </div>
@@ -116,6 +138,7 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/turbolinks@5.2.0/dist/turbolinks.js"></script>
 <script src="{{ url('/assets/libs/jquery/dist/jquery.min.js')}}"></script>
 <script src="{{ url('/assets/libs/bootstrap/dist/js/bootstrap.bundle.min.js')}}"></script>
 <script src="{{ url('/assets/js/sidebarmenu.js')}}"></script>

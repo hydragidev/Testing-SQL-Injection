@@ -26,3 +26,5 @@ Route::get('/dashboard/delete/{id}', [Dashboard::class, 'delete_project'])->name
 Route::get('/dashboard/reset_project', [Dashboard::class, 'reset_project'])->name('dashboard.reset_project');
 Route::get('/dashboard/project_detail', [Dashboard::class, 'project_detail'])->name('dashboard.project_detail');
 Route::get('/dashboard/project_launch', [Dashboard::class, 'project_launch'])->name('dashboard.project_launch');
+Route::get('/dashboard/project_launch_detail/{id}', [Dashboard::class, 'project_launch_detail'])->name('dashboard.project_launch_detail');
+Route::get('/dashboard/project_launch_delete/{id}', [Dashboard::class, 'project_launch_delete'])->name('dashboard.project_launch_delete');
